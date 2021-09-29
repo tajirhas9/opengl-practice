@@ -8,12 +8,15 @@
  *                              4. draw circle with Bresenham's Circle Algorithm
  *                              5. draw circle with Midpoint Circle Algorithm
  *                              6. draw ellipse with Midpoint Ellipse Algorithm
+ *                              7. C Curve Algorithm
+ *                              8. Gasket Algorithm
 */
 
 #include <GL/glut.h>
 #include <cmath>
 #include <stdio.h>
 #include <iostream>
+#include <vector>
 #include "geometry.h"
 
 namespace glib
@@ -306,26 +309,67 @@ namespace glib
     }
 
     // c curve
-    void c_curve(geo::Point a, double length, double alpha, int n, geo::Point &_a)
+    void c_curve(geo::Point x, float lent, float alpha, int n, int &cnt2, std::vector<int> &a, std::vector<int> &b, geo::Point &_x)
     {
-        std::cout << a << " " << length << " " << alpha << " " << n << " " << _a << std::endl;
         if(n>0)
         {
             int extra = 36;
-            length = length/sqrt(2.0);
-            c_curve(a, length, alpha+extra, n-1, _a);
-            a.x += length*cos((alpha+extra) * M_PI/180);
-            a.y += length*sin((alpha+extra) * M_PI/180);
-            c_curve(a, length, alpha-extra, n-1, _a);
+            lent = lent/sqrt(2.0);
+            c_curve(x, lent, alpha+extra, n-1, cnt2, a, b, _x);
+            x.x += lent*cos((alpha+extra) * M_PI/180);
+            x.y += lent*sin((alpha+extra) * M_PI/180);
+            if(cnt2 == 1)
+            {
+                a[0] = x.x;
+                b[0] = x.y;
+            }
+            if(cnt2 == 5)
+            {
+                a[1] = x.x+ (lent/2)* 0.25;
+                b[1] = x.y;
+            }
+            if(cnt2 == 7)
+            {
+                a[2] = x.x - (lent/2)* 0.25;
+                b[2] = x.y;
+            }
+            c_curve(x, lent, alpha-extra, n-1, cnt2, a, b, _x);
         }
 
         else
         {
             glBegin(GL_LINES);
-            glVertex2d(a.x, a.y);
-            _a.x = a.x + (length*cos(alpha * M_PI/180));
-            _a.y = a.y + (length*sin(alpha * M_PI/180));
-            glVertex2d(a.x + (length*cos(alpha * M_PI/180)), a.y+(length*sin(alpha * M_PI/180)));
+            glVertex2d(x.x, x.y);
+            _x.x = x.x + (lent*cos(alpha * M_PI/180));
+            _x.y = x.y + (lent*sin(alpha * M_PI/180));
+            glVertex2d(x.x + (lent*cos(alpha * M_PI/180)), x.y+(lent*sin(alpha * M_PI/180)));
+            glEnd();
+            glFlush();
+            cnt2++;
+        }
+    }
+
+    void gasket(float x1, float y1, float x2, float y2, float x3, float y3, int n)
+    {
+        float x12, y12, x13, y13, x23, y23;
+        if(n>0)
+        {
+            x12 = (x1 + x2)/2;
+            y12 = (y1 + y2)/2;
+            x13 = (x1 + x3)/2;
+            y13 = (y1 + y3)/2;
+            x23 = (x2 + x3)/2;
+            y23 = (y2 + y3)/2;
+            gasket(x1, y1, x12, y12, x13, y13, n-1);
+            gasket(x12, y12, x2, y2, x23, y23, n-1);
+            gasket(x13, y13, x23, y23, x3, y3, n-1);
+        }
+        else
+        {
+            glBegin(GL_TRIANGLES);
+            glVertex2f(x1,y1);
+            glVertex2f(x2,y2);
+            glVertex2f(x3,y3);
             glEnd();
             glFlush();
         }
